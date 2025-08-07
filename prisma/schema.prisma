@@ -1,0 +1,407 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters", "fullTextSearchPostgres", "views"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model account {
+  id                String       @id @default(cuid())
+  type              String
+  provider          String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  userId            String       @map("user_id")
+  providerAccountId String
+  user              user         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentials       credentials?
+
+  @@unique([provider, providerAccountId], name: "provider_providerAccountId", map: "provider_providerAccountId")
+}
+
+model cart {
+  CartID      String      @id
+  userID      String      @unique
+  CreatedDate DateTime    @default(now())
+  IsActive    Boolean     @default(false)
+  user        user        @relation(fields: [userID], references: [id], onDelete: Cascade)
+  cart_item   cart_item[]
+}
+
+model cart_item {
+  CartItemID      String             @id
+  productID       String?
+  Quantity        Int
+  AddedDate       DateTime           @default(now())
+  TotalPrice      Int
+  variant_id      String?            @unique
+  isVariant       VARIANT
+  Price           Int
+  ProductID       String?            @unique
+  CartID          String
+  updatedAt       DateTime           @updatedAt
+  stockQuantity   Int
+  cart            cart               @relation(fields: [CartID], references: [CartID], onDelete: Cascade)
+  product         product?           @relation(fields: [ProductID], references: [id], onDelete: Cascade)
+  product_variant variant_attribute? @relation(fields: [variant_id], references: [id], onDelete: Cascade)
+}
+
+model category {
+  id           Int            @id @default(autoincrement())
+  name         String         @unique
+  hint_text    String?
+  prod_reviews prod_reviews[]
+  product      product[]
+}
+
+model message {
+  id                           String   @id
+  message                      String
+  user_id                      String
+  sender_id                    String
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+  ticket                       ticket   @relation(fields: [id], references: [id], map: "message_ffk")
+  user_message_user_idTouser   user     @relation("message_user_idTouser", fields: [user_id], references: [id], map: "message_sende_ffk")
+  user_message_sender_idTouser user     @relation("message_sender_idTouser", fields: [sender_id], references: [id])
+}
+
+model notification {
+  id        String   @id
+  user_id   String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  user      user     @relation(fields: [user_id], references: [id])
+}
+
+model order_details {
+  OrderDetailID String  @id @unique
+  order_id      String
+  product_id    String  @unique
+  Quantity      Int
+  UnitPrice     Float
+  Discount      Int
+  total_price   Float
+  orders        orders  @relation(fields: [order_id], references: [OrderID])
+  product       product @relation(fields: [product_id], references: [id])
+}
+
+model orders {
+  OrderID         String          @id
+  user_id         String
+  OrderDate       DateTime        @default(now())
+  ShippingAddress String
+  BillingAddress  String?
+  TotalAmount     Float
+  IsPaid          Boolean         @default(false)
+  PaymentMethod   String
+  Status          String          @default("uncompleted")
+  completed_date  DateTime?
+  order_details   order_details[]
+  user            user            @relation(fields: [user_id], references: [id])
+}
+
+/// This table is a partition table and requires additional setup for migrations. Visit https://pris.ly/d/partition-tables for more info.
+model prod_reviews {
+  id          String     @default(dbgenerated("gen_random_uuid()"))
+  comment     String?
+  createdat   DateTime?  @default(now()) @db.Timestamp(6)
+  updatedat   DateTime?  @db.Timestamp(6)
+  review      Int
+  category_id Int
+  user_id     String
+  prod_id     String
+  category    category   @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "categorylist_ffk")
+  product     product    @relation(fields: [prod_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "commentproduct_ffk")
+  user        user       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "usercomm_ffks")
+  reactions   reaction[]
+  reply       reply?
+
+  @@id([id, category_id], name: "reviewId", map: "prodreviews_pkey")
+  @@unique([id, category_id, user_id], name: "reviewIds", map: "prod_reviews_id_key")
+  @@unique([category_id, user_id, prod_id], name: "userReview", map: "unik_revies")
+}
+
+model reaction {
+  id           String       @default(dbgenerated("gen_random_uuid()"))
+  user_id      String
+  category_id  Int
+  prod_id      String
+  reviewer_id  String
+  reation_type Reaction     @default(NULL)
+  product      product      @relation(fields: [prod_id], references: [id])
+  review       prod_reviews @relation(fields: [reviewer_id, category_id], references: [id, category_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([id, reviewer_id], name: "userReactions")
+  @@unique([reviewer_id, user_id, prod_id], name: "reviewerReaction")
+}
+
+model prodimage {
+  id        String   @id
+  image     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   product  @relation(fields: [id], references: [id], onDelete: Cascade)
+}
+
+model variant_prodimage {
+  id        String            @id
+  image     String
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  variant   variant_attribute @relation(fields: [id], references: [id], onDelete: Cascade)
+}
+
+model product {
+  id                 String              @id
+  name               String
+  description        String
+  price              Float
+  originalPrice      Float
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  availability       Availability        @default(IN_STOCK)
+  rating             Float               @default(0)
+  categoryId         Int
+  stockQt            Int
+  activated          Boolean             @default(true)
+  order_qt           Int                 @default(0)
+  cart_item          cart_item?
+  order_details      order_details?
+  prod_reviews       prod_reviews[]
+  prodimage          prodimage[]
+  category           category            @relation(fields: [categoryId], references: [id])
+  product_attribute  product_attribute?
+  reactions          reaction[]
+  store_subscription store_subscription?
+  variant            variant_attribute[]
+  wishlist           wishlist?
+}
+
+model product_attribute {
+  id        String   @id @unique
+  size      String?
+  weight    Int?
+  brand     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   product  @relation(fields: [id], references: [id], onDelete: Cascade)
+}
+
+model variant_attribute {
+  id            String             @id @unique
+  product_id    String
+  variant_name  String
+  price         Float
+  stock_qt      Int
+  order_qt      Int                @default(0)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  originalPrice Float?
+  cart_item     cart_item?
+  product       product            @relation(fields: [product_id], references: [id])
+  image         variant_prodimage?
+}
+
+model reply {
+  id           String       @id
+  text         String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  category_id  Int
+  comenter_id  String
+  review_id    String
+  reviewer_id  String
+  prod_reviews prod_reviews @relation(fields: [review_id, category_id, comenter_id], references: [id, category_id, user_id])
+
+  @@unique([review_id, category_id, comenter_id])
+}
+
+model session {
+  id           String   @id @default(cuid())
+  expires      DateTime
+  ipAddress    String?
+  lastActive   DateTime @default(now())
+  location     String?
+  userAgent    String?
+  sessionToken String   @unique
+  userId       String
+  user         user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model shipping_address {
+  id           String    @id
+  lga         String
+  state        String
+  street       String
+  contact_name String
+  country      String
+  is_default   ISDEFAULT @default(false)
+  mobile_no    String
+  suite_no     String?
+  zip_code     String
+  user         user      @relation(fields: [id], references: [id], onDelete: Cascade)
+}
+
+model user_preferences {
+  id String @id @default(cuid())
+  preferred_products String[]
+  preferred_location String[]
+  preferred_language String?
+  preferred_currency String?
+  user_pref user @relation(fields: [id], references: [id], onDelete: Cascade)
+}
+
+model store_subscription {
+  id        String   @id
+  user_id   String
+  storeId   String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   product  @relation(fields: [storeId], references: [id])
+  user      user     @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, storeId])
+}
+
+model ticket {
+  id      String   @id
+  user_Id String
+  message message?
+  user    user     @relation(fields: [user_Id], references: [id], map: "ticket_ffk")
+}
+
+model profile {
+  id          String   @id
+  firstName   String
+  lastName    String
+  phoneNumber String
+  address     String
+  user_id     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user_user   user     @relation(fields: [id], references: [id], onDelete: Cascade)
+}
+
+model user {
+  id                              String               @id @default(cuid())
+  email                           String               @unique
+  IsEmailVerified                 Boolean              @default(false)
+  image                           String?
+  createdAt                       DateTime             @default(now())
+  updatedAt                       DateTime             @updatedAt
+  name                            String?
+  emailVerified                   DateTime?
+  account                         account[]
+  cart                            cart?
+  message_message_user_idTouser   message[]            @relation("message_user_idTouser")
+  message_message_sender_idTouser message[]            @relation("message_sender_idTouser")
+  notification                    notification[]
+  orders                          orders[]
+  prod_reviews                    prod_reviews[]
+  profile                         profile?
+  session                         session[]
+  shipping_address                shipping_address[]
+  store_subscription              store_subscription[]
+  ticket                          ticket[]
+  wishlist                        wishlist?
+  preferences                     user_preferences?
+}
+
+model verificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model wishlist {
+  id         String   @id
+  user_id    String   @unique
+  product_id String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  product    product  @relation(fields: [id], references: [id])
+  user       user     @relation(fields: [user_id], references: [id])
+}
+
+model credentials {
+  id           String  @id
+  accessToken  String  @unique
+  refreshToken String  @unique
+  account      account @relation(fields: [id], references: [id], onDelete: Cascade)
+}
+
+view ratings_stats {
+  prod_id        String   @unique
+  total_reviews  Int?
+  average_rating Decimal? @db.Decimal
+  percentage_5   Decimal? @db.Decimal
+  percentage_4   Decimal? @db.Decimal
+  percentage_3   Decimal? @db.Decimal
+  percentage_2   Decimal? @db.Decimal
+  percentage_1   Decimal? @db.Decimal
+}
+
+enum Availability {
+  IN_STOCK
+  OUT_OF_STOCK
+  COMING_SOON
+  LIMITED_STOCK
+}
+
+enum MessageTypeEnum {
+  SENT
+  RECEIVED
+}
+
+enum OPTIONS {
+  NEGOTIABLE
+  BESTPRICE
+}
+
+enum VARIANT {
+  true
+  false
+}
+
+enum ISDEFAULT {
+  true
+  false
+}
+
+enum Plan {
+  PAID
+  FREE
+}
+
+enum Role {
+  ADMIN
+  USER
+  STORE_OWNER
+  MODERATOR
+  GUEST
+}
+
+enum Status {
+  NEW
+  FAIRLY_USED
+  REFURBISHED
+}
+
+enum Reaction {
+  YES
+  NO
+  NULL
+}
