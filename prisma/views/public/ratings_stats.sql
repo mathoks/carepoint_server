@@ -1,73 +1,68 @@
 SELECT
-  prod_reviews.prod_id,
-  (count(*)) :: integer AS total_reviews,
-  avg(prod_reviews.review) AS average_rating,
-  round(
+  pr.prod_id,
+  count(pr.review) AS total_reviews,
+  (avg(pr.review)) :: numeric(10, 2) AS average_rating,
+  (
     (
       (
-        (
-          count(*) FILTER (
-            WHERE
-              (prod_reviews.review = 5)
-          )
-        ) :: numeric * 100.0
-      ) / (count(*)) :: numeric
-    ),
-    2
+        sum(
+          CASE
+            WHEN (pr.review = 5) THEN 1
+            ELSE 0
+          END
+        )
+      ) :: numeric(10, 2) * 100.0
+    ) / (count(pr.review)) :: numeric
   ) AS percentage_5,
-  round(
+  (
     (
       (
-        (
-          count(*) FILTER (
-            WHERE
-              (prod_reviews.review = 4)
-          )
-        ) :: numeric * 100.0
-      ) / (count(*)) :: numeric
-    ),
-    2
+        sum(
+          CASE
+            WHEN (pr.review = 4) THEN 1
+            ELSE 0
+          END
+        )
+      ) :: numeric(10, 2) * 100.0
+    ) / (count(pr.review)) :: numeric
   ) AS percentage_4,
-  round(
+  (
     (
       (
-        (
-          count(*) FILTER (
-            WHERE
-              (prod_reviews.review = 3)
-          )
-        ) :: numeric * 100.0
-      ) / (count(*)) :: numeric
-    ),
-    2
+        sum(
+          CASE
+            WHEN (pr.review = 3) THEN 1
+            ELSE 0
+          END
+        )
+      ) :: numeric(10, 2) * 100.0
+    ) / (count(pr.review)) :: numeric
   ) AS percentage_3,
-  round(
+  (
     (
       (
-        (
-          count(*) FILTER (
-            WHERE
-              (prod_reviews.review = 2)
-          )
-        ) :: numeric * 100.0
-      ) / (count(*)) :: numeric
-    ),
-    2
+        sum(
+          CASE
+            WHEN (pr.review = 2) THEN 1
+            ELSE 0
+          END
+        )
+      ) :: numeric(10, 2) * 100.0
+    ) / (count(pr.review)) :: numeric
   ) AS percentage_2,
-  round(
+  (
     (
       (
-        (
-          count(*) FILTER (
-            WHERE
-              (prod_reviews.review = 1)
-          )
-        ) :: numeric * 100.0
-      ) / (count(*)) :: numeric
-    ),
-    2
+        sum(
+          CASE
+            WHEN (pr.review = 1) THEN 1
+            ELSE 0
+          END
+        )
+      ) :: numeric(10, 2) * 100.0
+    ) / (count(pr.review)) :: numeric
   ) AS percentage_1
 FROM
-  prod_reviews
+  prod_reviews pr
 GROUP BY
-  prod_reviews.prod_id;
+  pr.prod_id;

@@ -15,13 +15,18 @@ import {
   ratings_stats,
   reaction,
 } from '@prisma/client';
+import { CacheKey } from '@nestjs/cache-manager';
 
 @Controller('products')
+// @UseInterceptors(CacheInterceptor)
+@CacheKey('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
-  @Get() async getProducts(
+  @Get()
+  async getProducts(
     @Query('skip') skip?: number,
     @Query('take') take?: number,
+    @Query('filter') filter?: string,
     @Query('cursor') cursor?: string,
     @Query('where') where?: Prisma.productWhereInput,
     @Query('orderBy') orderBy?: Prisma.productOrderByWithRelationInput,
@@ -29,11 +34,12 @@ export class ProductsController {
     const data = await this.productsService.products({
       skip: Number(skip),
       take: Number(take),
+      filter,
       cursor,
       where,
       orderBy,
     });
-    console.log(data);
+
     return data;
   }
 
@@ -55,9 +61,12 @@ export class ProductsController {
     return data;
   }
 
-  @Get('/trending')
-  async getTrendingProducts(): Promise<ProductModel[]> {
-    const data = await this.productsService.Trendingproduct();
+  @Get('/trending/:category')
+  async getTrendingProducts(
+    @Param('category') category: string,
+  ): Promise<ProductModel[]> {
+    const data = await this.productsService.Trendingproduct(category);
+
     return data;
   }
 
@@ -65,7 +74,7 @@ export class ProductsController {
   async getCategoryHint(
     @Param('category') category: Pick<Prisma.categoryWhereUniqueInput, 'name'>,
   ): Promise<object> {
-    const data = await this.productsService.productCategoryHint(category.name);
+    const data = await this.productsService.productCategoryHint(category);
     return data;
   }
 
@@ -73,7 +82,7 @@ export class ProductsController {
   async getProdByCategory(
     @Query('category') category: Pick<Prisma.categoryWhereUniqueInput, 'name'>,
   ): Promise<object> {
-    const data = await this.productsService.productCategoryHint(category.name);
+    const data = await this.productsService.productCategoryHint(category);
     return data;
   }
   @Get('/:id/getAllReviews')
@@ -100,7 +109,8 @@ export class ProductsController {
 
   @Get('/:id')
   async getProductById(@Param('id') id: string): Promise<ProductModel> {
-    return this.productsService.product({ id: id });
+    const data = await this.productsService.product({ id: id });
+    return data;
   }
 
   @Get('/:id/reviews-reactions')
@@ -152,6 +162,7 @@ export class ProductsController {
       stockQt,
       description,
       originalPrice,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       image,
       categoryId,
     } = productData;
@@ -197,9 +208,10 @@ export class ProductsController {
   async getProductReviewsSum(
     @Param('id') id: string,
   ): Promise<ratings_stats | object> {
-    return this.productsService.getProductReviewsSum({
+    const data = await this.productsService.getProductReviewsSum({
       id: id,
     });
+    return data;
   }
 
   @Delete('/:id')

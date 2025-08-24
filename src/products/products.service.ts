@@ -54,9 +54,24 @@ export class ProductsService {
     });
   }
 
-  async Trendingproduct(): Promise<ProductModel[] | null> {
+  async Trendingproduct(
+    category: CategoryModel['name'],
+  ): Promise<ProductModel[] | null> {
     return this.prisma.product.findMany({
-      where: { activated: true },
+      where:
+        category.trim() === 'all-categories'
+          ? { activated: true }
+          : {
+              AND: [
+                { activated: true },
+
+                {
+                  category: {
+                    name: { search: category, mode: 'insensitive' },
+                  },
+                },
+              ],
+            },
       take: 10,
       orderBy: { createdAt: 'asc' },
       include: {
@@ -71,10 +86,10 @@ export class ProductsService {
   }
 
   async productCategoryHint(
-    _category: string,
+    _category,
   ): Promise<Pick<CategoryModel, 'hint_text'>> {
     const data = await this.prisma.category.findUnique({
-      where: { name: 'Vitamins' },
+      where: { name: _category },
       select: {
         hint_text: true,
       },
@@ -167,18 +182,32 @@ export class ProductsService {
   }
 
   async products(params: {
+    filter?: string;
     skip?: number;
     take?: number;
     cursor?: string;
     where?: Prisma.productWhereInput;
     orderBy?: Prisma.productOrderByWithRelationInput;
   }): Promise<ProductModel[]> {
-    const { skip, take, cursor } = params;
+    const { skip, take, cursor, filter = 'All-categories' } = params;
     if (cursor === '') {
       return this.prisma.product.findMany({
         skip: 0,
         take,
-        where: { activated: true },
+        where:
+          filter.trim() === 'all-categories'
+            ? { activated: true }
+            : {
+                AND: [
+                  { activated: true },
+
+                  {
+                    category: {
+                      name: { search: filter, mode: 'insensitive' },
+                    },
+                  },
+                ],
+              },
         orderBy: { updatedAt: 'asc' },
         include: {
           prodimage: {
@@ -207,7 +236,19 @@ export class ProductsService {
         skip,
         take,
         cursor: { id: cursor },
-        where: { activated: true },
+        where: {
+          AND: [
+            { activated: true },
+            {
+              category: {
+                name:
+                  filter.trim() !== 'all-categories'
+                    ? { search: filter, mode: 'insensitive' }
+                    : undefined,
+              },
+            },
+          ],
+        },
         orderBy: { updatedAt: 'asc' },
         include: {
           prodimage: {
@@ -358,7 +399,7 @@ export class ProductsService {
   async getProductReviewsSum(params: {
     id: string;
   }): Promise<ratings_stats | object> {
-    const review = await this.prisma.ratings_stats.findUnique({
+    const review = await this.prisma.ratings_stats.findFirst({
       where: {
         prod_id: params.id,
       },

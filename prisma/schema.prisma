@@ -38,20 +38,21 @@ model cart {
 
 model cart_item {
   CartItemID      String             @id
-  productID       String?
   Quantity        Int
   AddedDate       DateTime           @default(now())
   TotalPrice      Int
-  variant_id      String?            @unique
+  variant_id      String?            
   isVariant       VARIANT
   Price           Int
-  ProductID       String?            @unique
+  ProductID       String           
   CartID          String
   updatedAt       DateTime           @updatedAt
   stockQuantity   Int
   cart            cart               @relation(fields: [CartID], references: [CartID], onDelete: Cascade)
-  product         product?           @relation(fields: [ProductID], references: [id], onDelete: Cascade)
+  product         product            @relation(fields: [ProductID], references: [id], onDelete: Cascade)
   product_variant variant_attribute? @relation(fields: [variant_id], references: [id], onDelete: Cascade)
+
+  @@unique([ProductID, variant_id, CartID], name: "cart_item_entry", map: "cart_item_key")
 }
 
 model category {
@@ -176,10 +177,10 @@ model product {
   stockQt            Int
   activated          Boolean             @default(true)
   order_qt           Int                 @default(0)
-  cart_item          cart_item?
+  cart_item          cart_item[]
   order_details      order_details?
   prod_reviews       prod_reviews[]
-  prodimage          prodimage[]
+  prodimage          prodimage?
   category           category            @relation(fields: [categoryId], references: [id])
   product_attribute  product_attribute?
   reactions          reaction[]
@@ -208,9 +209,9 @@ model variant_attribute {
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
   originalPrice Float?
-  cart_item     cart_item?
+  cart_item     cart_item[]
   product       product            @relation(fields: [product_id], references: [id])
-  image         variant_prodimage?
+  variant_image variant_prodimage?
 }
 
 model reply {
@@ -241,7 +242,6 @@ model session {
 
 model shipping_address {
   id           String    @id
-  lga         String
   state        String
   street       String
   contact_name String
@@ -250,16 +250,17 @@ model shipping_address {
   mobile_no    String
   suite_no     String?
   zip_code     String
+  lga          String
   user         user      @relation(fields: [id], references: [id], onDelete: Cascade)
 }
 
 model user_preferences {
-  id String @id @default(cuid())
+  id                 String   @id @default(cuid())
   preferred_products String[]
   preferred_location String[]
   preferred_language String?
   preferred_currency String?
-  user_pref user @relation(fields: [id], references: [id], onDelete: Cascade)
+  user_pref          user     @relation(fields: [id], references: [id], onDelete: Cascade)
 }
 
 model store_subscription {
@@ -311,11 +312,11 @@ model user {
   prod_reviews                    prod_reviews[]
   profile                         profile?
   session                         session[]
-  shipping_address                shipping_address[]
+  shipping_address                shipping_address?
   store_subscription              store_subscription[]
   ticket                          ticket[]
-  wishlist                        wishlist?
   preferences                     user_preferences?
+  wishlist                        wishlist?
 }
 
 model verificationToken {
@@ -344,9 +345,9 @@ model credentials {
 }
 
 view ratings_stats {
-  prod_id        String   @unique
-  total_reviews  Int?
-  average_rating Decimal? @db.Decimal
+  prod_id        String
+  total_reviews  BigInt?
+  average_rating Decimal? @db.Decimal(10, 2)
   percentage_5   Decimal? @db.Decimal
   percentage_4   Decimal? @db.Decimal
   percentage_3   Decimal? @db.Decimal

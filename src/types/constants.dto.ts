@@ -1,0 +1,1 @@
+export const PG_CLIENT_OPTIONS = 'PG_CLIENT_OPTIONS';

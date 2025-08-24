@@ -29,7 +29,6 @@ export class UsersController {
   @Get('profile/:id/address')
   async GetAddress(@Param('id') id: string): Promise<shipping_address[]> {
     const data = await this.userService.GetAddress(id);
-    console.log(data);
     return data;
   }
 
@@ -38,7 +37,6 @@ export class UsersController {
     @Param('id') id: string,
   ): Promise<user_preferences | string> {
     const data = await this.userService.GetPref(id);
-    console.log(data);
     return data ?? 'null';
   }
 
