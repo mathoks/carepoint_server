@@ -148,7 +148,7 @@ export class MyAuthGuard2 implements CanActivate {
   constructor(private readonly verifyService: ValidateToken) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
-
+    console.log(request);
     try {
       const authorizationHeader = request.headers['authorization'];
       if (!authorizationHeader) {

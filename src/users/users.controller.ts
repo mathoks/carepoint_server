@@ -5,10 +5,11 @@ import {
   Param,
   Post,
   Req,
+  Patch,
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { shipping_address, user_preferences } from '@prisma/client';
+import { Prisma, shipping_address, user_preferences } from '@prisma/client';
 import { UsersService } from './users.service';
 import { createAddressDto } from 'src/types/custom.dto';
 import { MyAuthGuard2 } from '../auth/utils/guards/Guauds';
@@ -37,7 +38,18 @@ export class UsersController {
     @Param('id') id: string,
   ): Promise<user_preferences | string> {
     const data = await this.userService.GetPref(id);
+    console.log(data)
     return data ?? 'null';
+  }
+
+  @Patch('/update-user_preference')
+  // @UseGuards(MyAuthGuard2)
+  async AddPayMethods(
+    @Req() req: Request | any,
+    @Body() body: Prisma.user_preferencesCreateInput,
+  ): Promise<user_preferences> {
+    const user = req['headers'].user;
+    return this.userService.AddPayMethod(body, user);
   }
 
   @Post('/Add-Address/:id')

@@ -88,6 +88,21 @@ export class UsersService {
     });
   }
 
+  async AddPayMethod(
+    userprefData: Prisma.user_preferencesCreateInput,
+    userId: user_preferences['id'],
+  ): Promise<user_preferences> {
+    return this.prisma.user_preferences.upsert({
+      where: { id: userId },
+      update: {
+        ...userprefData,
+      },
+      create: {
+        ...userprefData,
+        user_pref: { connect: { id: userId } },
+      },
+    });
+  }
   async GetAddress(user_id: string): Promise<shipping_address[]> {
     const data = await this.prisma.shipping_address.findMany({
       where: {

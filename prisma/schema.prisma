@@ -105,8 +105,8 @@ model orders {
   BillingAddress  String?
   TotalAmount     Float
   IsPaid          Boolean         @default(false)
-  PaymentMethod   String
-  Status          String          @default("uncompleted")
+  PaymentMethod   PaymentMethod
+  Status          Order_status
   completed_date  DateTime?
   order_details   order_details[]
   user            user            @relation(fields: [user_id], references: [id])
@@ -260,6 +260,7 @@ model user_preferences {
   preferred_location String[]
   preferred_language String?
   preferred_currency String?
+  preferred_payment_method String?
   user_pref          user     @relation(fields: [id], references: [id], onDelete: Cascade)
 }
 
@@ -399,6 +400,17 @@ enum Status {
   NEW
   FAIRLY_USED
   REFURBISHED
+}
+
+enum PaymentMethod {
+  CARD
+  TRANSFER
+}
+
+enum Order_status {
+  COMPLETED
+  CLOSED
+  PENDING
 }
 
 enum Reaction {
