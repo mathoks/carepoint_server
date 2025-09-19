@@ -1,10 +1,5 @@
-import {
-  IsOptional,
-  MinLength,
-  MaxLength,
-  IsNotEmpty,
-  IsNumber,
-} from 'class-validator';
+import { Prisma, order_details } from '@prisma/client';
+import { IsOptional, MinLength, MaxLength, IsNotEmpty } from 'class-validator';
 // declare namespace Express {
 //   interface Request {
 //     user?: { id: string; email: string }; // Example of a more specific user type
@@ -53,6 +48,18 @@ export class createAddressDto {
   readonly user: object;
 
   constructor(params: createAddressDto) {
+    Object.assign(this, params);
+  }
+}
+
+export class createOrderDto {
+  @IsNotEmpty()
+  readonly orderData: Prisma.ordersCreateInput;
+
+  @IsNotEmpty()
+  readonly orderItemData: Omit<order_details, 'OrderDetailID, order_id'>[];
+
+  constructor(params: createOrderDto) {
     Object.assign(this, params);
   }
 }

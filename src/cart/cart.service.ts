@@ -275,4 +275,38 @@ export class CartService {
       }
     });
   }
+  deleteCart(cartId: string): Promise<void> {
+    return this.prisma.$transaction(async (tx) => {
+      try {
+        const userCart = await tx.cart.findUnique({
+          where: { CartID: cartId },
+          select: {
+            cart_item: {
+              select: {
+                CartItemID: true,
+              },
+            },
+            CartID: true,
+          },
+        });
+        if (userCart.cart_item.length > 0) {
+          await tx.cart_item.deleteMany({
+            where: {
+              CartItemID: {
+                in: userCart.cart_item.map((item) => item.CartItemID),
+              },
+            },
+          });
+        }
+        await tx.cart.delete({
+          where: {
+            CartID: userCart.CartID,
+          },
+        });
+      } catch (error) {
+        console.log(error);
+        throw new Error(error);
+      }
+    });
+  }
 }

@@ -84,4 +84,12 @@ export class CartController {
     const data = await this.cartService.deleteCartItem(id, userId);
     return { cartItemID: data };
   }
+
+  @Delete('/clear-cart/:id')
+  async deleteCarts(@Param('id') id: string, @Req() req): Promise<void> {
+    console.log('Deleting cart item with ID:', id);
+    // const userId = req?.headers?.user ?? undefined;
+    await this.cartService.deleteCart(id);
+    return null;
+  }
 }

@@ -88,28 +88,38 @@ model notification {
 model order_details {
   OrderDetailID String  @id @unique
   order_id      String
-  product_id    String  @unique
+  product_id    String 
   Quantity      Int
   UnitPrice     Float
   Discount      Int
   total_price   Float
+  isVariant    VARIANT
+  variant_id    String?
   orders        orders  @relation(fields: [order_id], references: [OrderID])
   product       product @relation(fields: [product_id], references: [id])
+  product_variant variant_attribute? @relation(fields: [variant_id], references: [id], onDelete: Cascade)
+    
+    @@unique([product_id, variant_id, order_id], name: "order_item_entry", map: "order_item_key")
 }
 
 model orders {
   OrderID         String          @id
   user_id         String
+  OrderNote       String?
+  DeliveryOption  DELOPTIONS       @default(STANDARD)
+  ShippingFee     Float
   OrderDate       DateTime        @default(now())
   ShippingAddress String
   BillingAddress  String?
   TotalAmount     Float
   IsPaid          Boolean         @default(false)
-  PaymentMethod   PaymentMethod
-  Status          Order_status
+  PaymentMethod   PaymentMethod   @default(CARD)
+  Status          Order_status    @default(PENDING)
   completed_date  DateTime?
   order_details   order_details[]
   user            user            @relation(fields: [user_id], references: [id])
+
+   @@unique([OrderID, user_id ], name: "order_item_unique", map: "order_item_unique_key")
 }
 
 /// This table is a partition table and requires additional setup for migrations. Visit https://pris.ly/d/partition-tables for more info.
@@ -178,7 +188,7 @@ model product {
   activated          Boolean             @default(true)
   order_qt           Int                 @default(0)
   cart_item          cart_item[]
-  order_details      order_details?
+  order_details      order_details[]
   prod_reviews       prod_reviews[]
   prodimage          prodimage?
   category           category            @relation(fields: [categoryId], references: [id])
@@ -210,6 +220,7 @@ model variant_attribute {
   updatedAt     DateTime           @updatedAt
   originalPrice Float?
   cart_item     cart_item[]
+  order_details order_details[]
   product       product            @relation(fields: [product_id], references: [id])
   variant_image variant_prodimage?
 }
@@ -260,7 +271,7 @@ model user_preferences {
   preferred_location String[]
   preferred_language String?
   preferred_currency String?
-  preferred_payment_method String?
+  preferred_payment_method PaymentMethod?
   user_pref          user     @relation(fields: [id], references: [id], onDelete: Cascade)
 }
 
@@ -371,6 +382,11 @@ enum MessageTypeEnum {
 enum OPTIONS {
   NEGOTIABLE
   BESTPRICE
+}
+
+enum DELOPTIONS {
+PICKUP
+STANDARD
 }
 
 enum VARIANT {

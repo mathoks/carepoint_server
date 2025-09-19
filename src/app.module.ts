@@ -33,6 +33,8 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { CartController } from './cart/cart.controller';
 import { isLoggedMiddleware } from './common/middleware/isLoggedMiddleware.middleware';
+import { OrderModule } from './order/order.module';
+
 
 @Module({
   imports: [
@@ -53,6 +55,7 @@ import { isLoggedMiddleware } from './common/middleware/isLoggedMiddleware.middl
     PrismaModule,
     MailModule,
     PgClientModule.forRootAsync(),
+    OrderModule,
   ],
   controllers: [
     AppController,
